@@ -19,8 +19,9 @@ fn create_js_runtime() -> JsRuntime {
   runtime.register_op("pi_bin", bin_op_sync(|_, _, _| Ok(314159)));
   runtime.register_op("pi_json", json_op_sync(|_, _: (), _| Ok(314159)));
   runtime.register_op("pi_async", json_op_async(op_pi_async));
-  runtime
-    .register_op("nop", |_, _, _| Op::Sync(OpResponse::Value(Box::new(9))));
+  runtime.register_op("nop", json_op_sync(|_, _: (), _| Ok(())));
+  // runtime
+  //   .register_op("nop", |_, _, _| Op::Sync(OpResponse::Value(Box::new(9))));
 
   // Init ops
   runtime

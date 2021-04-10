@@ -1464,6 +1464,7 @@ impl JsRuntime {
   }
 }
 
+/*
 #[cfg(test)]
 pub mod tests {
   use super::*;
@@ -2382,3 +2383,4 @@ main();
     assert!(error_string.contains("deno:core/core.js"));
   }
 }
+*/

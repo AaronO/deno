@@ -40,7 +40,7 @@ pub fn json_op_sync<F, V, R>(op_fn: F) -> Box<OpFn>
 where
   F: Fn(&mut OpState, V, Option<ZeroCopyBuf>) -> Result<R, AnyError> + 'static,
   V: DeserializeOwned,
-  R: Serialize + 'static,
+  R: Serialize + Default + 'static,
 {
   Box::new(move |state, payload, buf| -> Op {
     let result = payload
@@ -79,7 +79,7 @@ where
   F: Fn(Rc<RefCell<OpState>>, V, Option<ZeroCopyBuf>) -> R + 'static,
   V: DeserializeOwned,
   R: Future<Output = Result<RV, AnyError>> + 'static,
-  RV: Serialize + 'static,
+  RV: Serialize + Default + 'static,
 {
   let try_dispatch_op = move |state: Rc<RefCell<OpState>>,
                               p: OpPayload,
@@ -107,52 +107,4 @@ where
       }
     },
   )
-}
-
-#[cfg(test)]
-mod tests {
-  use super::*;
-
-  #[tokio::test]
-  async fn json_op_async_stack_trace() {
-    let mut runtime = crate::JsRuntime::new(Default::default());
-
-    async fn op_throw(
-      _state: Rc<RefCell<OpState>>,
-      msg: Option<String>,
-      zero_copy: Option<ZeroCopyBuf>,
-    ) -> Result<(), AnyError> {
-      assert_eq!(msg.unwrap(), "hello");
-      assert!(zero_copy.is_none());
-      Err(crate::error::generic_error("foo"))
-    }
-
-    runtime.register_op("op_throw", json_op_async(op_throw));
-    runtime
-      .execute(
-        "<init>",
-        r#"
-    // First we initialize the ops cache. This maps op names to their id's.
-    Deno.core.ops();
-    // Register the error class.
-    Deno.core.registerErrorClass('Error', Error);
-
-    async function f1() {
-      await Deno.core.jsonOpAsync('op_throw', 'hello');
-    }
-
-    async function f2() {
-      await f1();
-    }
-
-    f2();
-    "#,
-      )
-      .unwrap();
-    let e = runtime.run_event_loop().await.unwrap_err().to_string();
-    println!("{}", e);
-    assert!(e.contains("Error: foo"));
-    assert!(e.contains("at async f1 (<init>:"));
-    assert!(e.contains("at async f2 (<init>:"));
-  }
 }

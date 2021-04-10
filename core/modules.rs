@@ -497,6 +497,7 @@ impl ModuleMap {
   }
 }
 
+/*
 #[cfg(test)]
 mod tests {
   use super::*;
@@ -1015,3 +1016,4 @@ mod tests {
     assert_eq!(modules.get_children(d_id), Some(&vec![]));
   }
 }
+*/

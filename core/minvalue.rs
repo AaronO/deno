@@ -1,5 +1,5 @@
 use rusty_v8 as v8;
-use std::cell::RefCell;
+use std::any::TypeId;
 
 pub enum SerializablePkg {
   MinValue(MinValue),
@@ -59,46 +59,40 @@ impl serde::Serialize for MinValue {
   }
 }
 
-////
-// A specialization hack, see:
-// https://lukaskalbertodt.github.io/2019/12/05/generalized-autoref-based-specialization.html
-////
-
-pub fn to_pkg<T: serde::Serialize + Default + 'static>(x: T) -> SerializablePkg {
-  (&&Wrap(RefCell::new(x))).to_pkg()
+pub fn to_pkg<T: serde::Serialize + 'static>(x: T) -> SerializablePkg {
+  x.into()
 }
 
-struct Wrap<T>(RefCell<T>);
-trait ViaPrimitive { fn to_pkg(&self) -> SerializablePkg; }
-
-macro_rules! impl_via_primitive {
-  ($($T:ty => $minval:ident,)+) => {
-    $(impl ViaPrimitive for &&Wrap<$T> {
-      fn to_pkg(&self) -> SerializablePkg {
-        SerializablePkg::MinValue(MinValue::$minval(self.0.take()))
-      }
-    })+
-  };
-}
-
-impl_via_primitive!(
-  () => Unit,
-  bool => Bool,
-  i8 => Int8,
-  i16 => Int16,
-  i32 => Int32,
-  i64 => Int64,
-  u8 => UInt8,
-  u16 => UInt16,
-  u32 => UInt32,
-  u64 => UInt64,
-  f32 => Float32,
-  f64 => Float64,
-);
-
-trait ViaSerializable { fn to_pkg(&self) -> SerializablePkg; }
-impl<T: serde::Serialize + Default + 'static> ViaSerializable for &Wrap<T> {
-  fn to_pkg(&self) -> SerializablePkg {
-    SerializablePkg::Serializable(Box::new(self.0.take()))
+impl<T: serde::Serialize + 'static> From<T> for SerializablePkg {
+  fn from(x: T) -> Self {
+    let tid = TypeId::of::<T>();
+    
+    if tid == TypeId::of::<()>() {
+      Self::MinValue(MinValue::Unit(()))
+    } else if tid == TypeId::of::<bool>() {
+      Self::MinValue(MinValue::Bool(unsafe { std::mem::transmute_copy(&x) }))
+    } else if tid == TypeId::of::<i8>() {
+      Self::MinValue(MinValue::Int8(unsafe { std::mem::transmute_copy(&x) }))
+    } else if tid == TypeId::of::<i16>() {
+      Self::MinValue(MinValue::Int16(unsafe { std::mem::transmute_copy(&x) }))
+    } else if tid == TypeId::of::<i32>() {
+      Self::MinValue(MinValue::Int32(unsafe { std::mem::transmute_copy(&x) }))
+    } else if tid == TypeId::of::<i64>() {
+      Self::MinValue(MinValue::Int64(unsafe { std::mem::transmute_copy(&x) }))
+    } else if tid == TypeId::of::<u8>() {
+      Self::MinValue(MinValue::UInt8(unsafe { std::mem::transmute_copy(&x) }))
+    } else if tid == TypeId::of::<u16>() {
+      Self::MinValue(MinValue::UInt16(unsafe { std::mem::transmute_copy(&x) }))
+    } else if tid == TypeId::of::<u32>() {
+      Self::MinValue(MinValue::UInt32(unsafe { std::mem::transmute_copy(&x) }))
+    } else if tid == TypeId::of::<u64>() {
+      Self::MinValue(MinValue::UInt64(unsafe { std::mem::transmute_copy(&x) }))
+    } else if tid == TypeId::of::<f32>() {
+      Self::MinValue(MinValue::Float32(unsafe { std::mem::transmute_copy(&x) }))
+    } else if tid == TypeId::of::<f64>() {
+      Self::MinValue(MinValue::Float64(unsafe { std::mem::transmute_copy(&x) }))
+    } else {
+      Self::Serializable(Box::new(x))
+    }
   }
 }

@@ -98,7 +98,7 @@ pub struct OpError {
   message: String,
 }
 
-pub fn serialize_op_result<R: Serialize + Default + 'static>(
+pub fn serialize_op_result<R: Serialize + 'static>(
   result: Result<R, AnyError>,
   state: Rc<RefCell<OpState>>,
 ) -> OpResponse {

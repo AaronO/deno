@@ -40,7 +40,7 @@ pub fn json_op_sync<F, V, R>(op_fn: F) -> Box<OpFn>
 where
   F: Fn(&mut OpState, V, Option<ZeroCopyBuf>) -> Result<R, AnyError> + 'static,
   V: DeserializeOwned,
-  R: Serialize + Default + 'static,
+  R: Serialize + 'static,
 {
   Box::new(move |state, payload, buf| -> Op {
     let result = payload
@@ -79,7 +79,7 @@ where
   F: Fn(Rc<RefCell<OpState>>, V, Option<ZeroCopyBuf>) -> R + 'static,
   V: DeserializeOwned,
   R: Future<Output = Result<RV, AnyError>> + 'static,
-  RV: Serialize + Default + 'static,
+  RV: Serialize + 'static,
 {
   let try_dispatch_op = move |state: Rc<RefCell<OpState>>,
                               p: OpPayload,
